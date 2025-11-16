@@ -76,7 +76,7 @@ int servidor_inicializar(controlador_t *ctrl)
 
     /* ---- Crear hilo del reloj de simulacion ---- */
     if (pthread_create(&(ctrl->hilo_reloj), NULL, servidor_hilo_reloj, (void *) ctrl) != 0) {
-        perror("pthread_create (hilo_reloj)");
+        perror("pthread_create (ctrl->hilo_reloj)");
         close(ctrl->fifo_fd);
         ctrl->fifo_fd = -1;
         return -1;
@@ -87,8 +87,8 @@ int servidor_inicializar(controlador_t *ctrl)
         perror("pthread_create (hilo_agentes)");
         /* Si falla este hilo, cancelamos el de reloj y limpiamos. */
         ctrl->simulacion_activa = 0;
-        pthread_cancel(hilo_reloj);
-        pthread_join(hilo_reloj, NULL);
+        pthread_cancel(ctrl->hilo_reloj);
+        pthread_join(ctrl->hilo_reloj, NULL);
         close(ctrl->fifo_fd);
         ctrl->fifo_fd = -1;
         return -1;
