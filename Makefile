@@ -15,14 +15,14 @@ DIR_CONTROLADOR = controlador
 DIR_AGENTE = agente
 
 # Archivos del Controlador
-CONTROLADOR_SRC = $(DIR_CONTROLADOR)/main.c \
-                   $(DIR_CONTROLADOR)/controlador.c
+CONTROLADOR_SRC = $(controlador)/main.c \
+                   $(controlador)/controlador.c
 
 CONTROLADOR_OUT = controlador
 
 # Archivos del Agente
-AGENTE_SRC = $(DIR_AGENTE)/main.c \
-              $(DIR_AGENTE)/agente.c
+AGENTE_SRC = $(agente)/main.c \
+              $(agente)/agente.c
 
 AGENTE_OUT = agente
 
