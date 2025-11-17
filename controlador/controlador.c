@@ -26,78 +26,88 @@
     #include "controlador.h"
     
     int servidor_inicializar(controlador_t *ctrl)
-    {
-        int h, i;
-    
-        /* ---- Validacion de puntero ---- */
-        if (ctrl == NULL) {
-            fprintf(stderr, "Error: controlador nulo en servidor_inicializar().\n");
+{
+    int h, i;
+
+    /* ---- Validación de puntero ---- */
+    if (ctrl == NULL) {
+        fprintf(stderr, "Error: controlador nulo en servidor_inicializar().\n");
+        return -1;
+    }
+
+    /* ---- Inicializaciones MINIMAS antes de cualquier return ---- */
+    ctrl->reloj_iniciado = 0;
+    ctrl->fifo_fd = -1;
+
+    /* ---- Inicializar hora actual y bandera de simulación ---- */
+    ctrl->hora_actual       = ctrl->hora_ini;
+    ctrl->simulacion_activa = 1;
+
+    /* ---- Inicializar estadísticas globales ---- */
+    ctrl->solicitudes_negadas       = 0;
+    ctrl->solicitudes_ok            = 0;
+    ctrl->solicitudes_reprogramadas = 0;
+
+    /* ---- Inicializar estructuras por hora ---- */
+    for (h = 0; h <= MAX_HORAS_DIA; h++) {
+        ctrl->horas[h].hora             = h;
+        ctrl->horas[h].aforo_maximo     = ctrl->aforo_maximo;
+        ctrl->horas[h].ocupacion_actual = 0;
+        ctrl->horas[h].num_reservas     = 0;
+
+        for (i = 0; i < MAX_RESERVAS_POR_HORA; i++) {
+            ctrl->horas[h].reservas[i].nombre_familia[0] = '\0';
+            ctrl->horas[h].reservas[i].hora_inicio       = 0;
+            ctrl->horas[h].reservas[i].hora_fin          = 0;
+            ctrl->horas[h].reservas[i].num_personas      = 0;
+        }
+    }
+
+    /* ---- Crear el FIFO nominal ---- */
+    if (mkfifo(ctrl->pipe_entrada, 0666) == -1) {
+        if (errno != EEXIST) {
+            perror("mkfifo (pipe de entrada del servidor)");
             return -1;
         }
-    
-        /* ---- Inicializar hora actual y bandera de simulacion ---- */
-        ctrl->hora_actual       = ctrl->hora_ini;
-        ctrl->simulacion_activa = 1;
-    
-        /* ---- Inicializar estadisticas globales ---- */
-        ctrl->solicitudes_negadas       = 0;
-        ctrl->solicitudes_ok            = 0;
-        ctrl->solicitudes_reprogramadas = 0;
-    
-        /* ---- Inicializar estructuras por hora ---- */
-        for (h = 0; h <= MAX_HORAS_DIA; h++) {
-            ctrl->horas[h].hora             = h;
-            ctrl->horas[h].aforo_maximo     = ctrl->aforo_maximo;
-            ctrl->horas[h].ocupacion_actual = 0;
-            ctrl->horas[h].num_reservas     = 0;
-    
-            for (i = 0; i < MAX_RESERVAS_POR_HORA; i++) {
-                ctrl->horas[h].reservas[i].nombre_familia[0] = '\0';
-                ctrl->horas[h].reservas[i].hora_inicio       = 0;
-                ctrl->horas[h].reservas[i].hora_fin          = 0;
-                ctrl->horas[h].reservas[i].num_personas      = 0;
-            }
-        }
-    
-        /* ---- Crear el FIFO nominal ---- */
-        if (mkfifo(ctrl->pipe_entrada, 0666) == -1) {
-            if (errno != EEXIST) {
-                perror("mkfifo (pipe de entrada del servidor)");
-                return -1;
-            }
-        }
-    
-        /* ---- Abrir el FIFO para lectura/escritura ---- */
-        ctrl->fifo_fd = open(ctrl->pipe_entrada, O_RDWR);
-        if (ctrl->fifo_fd == -1) {
-            perror("open (pipe de entrada del servidor)");
-            return -1;
-        }
-    
-        /* ---- Crear hilo del reloj de simulacion ---- 
-        if (pthread_create(&(ctrl->hilo_reloj), NULL, servidor_hilo_reloj, (void *) ctrl) != 0) {
-            perror("pthread_create (ctrl->hilo_reloj)");
-            close(ctrl->fifo_fd);
-            ctrl->fifo_fd = -1;
-            return -1;
-        } */
-    
-        /* ---- Crear hilo para atencion de agentes (lectura del FIFO) ---- */
-        if (pthread_create(&(ctrl->hilo_agentes), NULL, servidor_hilo_agentes, (void *) ctrl) != 0) {
-            perror("pthread_create (hilo_agentes)");
-            /* Si falla este hilo, cancelamos el de reloj y limpiamos. */
-            ctrl->simulacion_activa = 0;
+    }
+
+    /* ---- Abrir el FIFO para lectura/escritura ---- */
+    ctrl->fifo_fd = open(ctrl->pipe_entrada, O_RDWR);
+    if (ctrl->fifo_fd == -1) {
+        perror("open (pipe de entrada del servidor)");
+        return -1;
+    }
+
+    /* --------------------------------------------------------------------
+       NOTA IMPORTANTE:
+       Ya NO iniciamos el hilo de reloj aquí.
+       Se iniciará en servidor_hilo_agentes(), al primer REGISTRO.
+       -------------------------------------------------------------------- */
+
+    /* ---- Crear hilo para atención de agentes ---- */
+    if (pthread_create(&(ctrl->hilo_agentes), NULL,
+                       servidor_hilo_agentes, (void *) ctrl) != 0) {
+
+        perror("pthread_create (hilo_agentes)");
+        ctrl->simulacion_activa = 0;
+
+        /* Si el reloj ya había sido iniciado por accidente, lo limpiamos */
+        if (ctrl->reloj_iniciado) {
             pthread_cancel(ctrl->hilo_reloj);
             pthread_join(ctrl->hilo_reloj, NULL);
+        }
+
+        if (ctrl->fifo_fd != -1) {
             close(ctrl->fifo_fd);
             ctrl->fifo_fd = -1;
-            return -1;
         }
-    
-        ctrl->reloj_iniciado = 0;
-    
-        return 0;
+
+        return -1;
     }
+
+    return 0;
+}
+
     
     void servidor_destruir(controlador_t *ctrl)
     {
