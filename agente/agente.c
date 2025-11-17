@@ -26,6 +26,7 @@
 
 /************************************************* Headers **************************************************/
 #include "agente.h"
+#include <errno.h>
 
 int preparar_fifo_respuesta(const char *pipe_resp) {
     // Crear FIFO si no existe
