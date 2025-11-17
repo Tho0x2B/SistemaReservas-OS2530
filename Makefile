@@ -15,17 +15,16 @@ DIR_CONTROLADOR = controlador
 DIR_AGENTE = agente
 
 # Archivos del Controlador
-CONTROLADOR_SRC = $(controlador)/main.c \
-                   $(controlador)/controlador.c
+CONTROLADOR_SRC = $(DIR_CONTROLADOR)/main.c \
+                   $(DIR_CONTROLADOR)/controlador.c
 
 CONTROLADOR_OUT = controlador
 
 # Archivos del Agente
-AGENTE_SRC = $(agente)/main.c \
-              $(agente)/agente.c
+AGENTE_SRC = $(DIR_AGENTE)/main.c \
+              $(DIR_AGENTE)/agente.c
 
 AGENTE_OUT = agente
-
 
 # ======================
 #  Targets principales
@@ -33,20 +32,17 @@ AGENTE_OUT = agente
 
 all: $(CONTROLADOR_OUT) $(AGENTE_OUT)
 
-
 # ----------------------
 #  Compilar Controlador
 # ----------------------
 $(CONTROLADOR_OUT): $(CONTROLADOR_SRC)
 	$(CC) $(CFLAGS) -o $(CONTROLADOR_OUT) $(CONTROLADOR_SRC)
 
-
 # -------------------
 #  Compilar Agente
 # -------------------
 $(AGENTE_OUT): $(AGENTE_SRC)
 	$(CC) $(CFLAGS) -o $(AGENTE_OUT) $(AGENTE_SRC)
-
 
 # ======================
 #  Limpieza
