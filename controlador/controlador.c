@@ -135,6 +135,12 @@ void *servidor_hilo_reloj(void *ctrl)
         /* ---- Aqui se deberian actualizar entradas/salidas de familias,     */
         printf("[RELOJ] Hora de simulacion: %d\n", c->hora_actual);
         fflush(stdout);
+
+        if (c->hora_actual >= c->hora_fin) {
+            /* Marcar fin para que otros hilos terminen limpiamente */
+            c->simulacion_activa = 0;
+            break;
+        }
     }
 
     return NULL;
