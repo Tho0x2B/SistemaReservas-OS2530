@@ -30,7 +30,7 @@
 #define MAXLINE 256   /* Tamaño maximo de buffer para mensajes */
 
 /************************************************* Prototipos ************************************************/
-
+int preparar_fifo_respuesta(const char *pipe_resp);
 /*  
  * registrar_agente()
  * Envia al controlador un mensaje de registro con:
