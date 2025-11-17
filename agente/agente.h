@@ -17,6 +17,13 @@
 #ifndef __AGENTE_H__
 #define __AGENTE_H__
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
 /************************************************* Headers **************************************************/
 #include <stdio.h>
 
