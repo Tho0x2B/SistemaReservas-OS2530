@@ -3,12 +3,12 @@
 /*************************************************************************************************************
 *            Pontificia Universidad Javeriana                                                                *
 *                                                                                                            *
-* Autor:     <TU NOMBRE>                                                                                     *
+* Autor:     Thomas Leal Puerta                                                                              *
 * Fecha:     16 de noviembre de 2025                                                                         *
 * Materia:   Sistemas Operativos                                                                             *
 * Profesor:  John Corredor Franco                                                                            *
-* Objetivo:  Proceso CLIENTE/AGENTE que se comunica mediante FIFO con el                                    *
-*            Controlador de Reserva del parque, enviando solicitudes leídas desde un archivo CSV.           *
+* Objetivo:  Proceso CLIENTE/AGENTE que se comunica mediante FIFO con el                                     *
+*            Controlador de Reserva del parque, enviando solicitudes leídas desde un archivo CSV.            *
 *                                                                                                            *
 **************************************************************************************************************
 *                                                                                                            *
@@ -18,24 +18,24 @@
 *   Linux/macOS:          gcc agente.c agente_main.c -o agente                                               *
 *                                                                                                            *
 * HOW TO RUN THE PROGRAM:                                                                                    *
-*   Linux/macOS:          ./agente -s nombreAgente -a archivo.csv -p /tmp/fifo_controlador                  *
+*   Linux/macOS:          ./agente -s nombreAgente -a archivo.csv -p /tmp/fifo_controlador                   *
 *                                                                                                            *
 * NOTAS DE USO:                                                                                              *
-*   - El proceso CONTROLADOR debe estar ejecutándose y haber creado el FIFO de entrada indicado en -p.      *
-*   - Cada agente crea su propio FIFO de respuesta en /tmp/resp_<nombreAgente>.                             *
-*   - El controlador envía al registrarse la hora actual de simulación.                                     *
-*   - El agente lee solicitudes del CSV y las envía si la hora >= hora_actual de simulación.                *
-*************************************************************************************************************/
+*   - El proceso CONTROLADOR debe estar ejecutándose y haber creado el FIFO de entrada indicado en -p.       *
+*   - Cada agente crea su propio FIFO de respuesta en /tmp/resp_<nombreAgente>.                              *
+*   - El controlador envía al registrarse la hora actual de simulación.                                      *
+*   - El agente lee solicitudes del CSV y las envía si la hora >= hora_actual de simulación.                 *
+**************************************************************************************************************/
 
 /************************************************************************************************************/
-/*  int main(int argc, char *argv[])                                                                        */
-/*                                                                                                          */
-/*  Propósito:                                                                                               */
-/*      - Parsear parámetros de línea de comandos (-s, -a, -p).                                             */
-/*      - Crear FIFO de respuesta propio del agente.                                                        */
-/*      - Registrarse ante el Controlador y leer la hora actual de simulación.                             */
-/*      - Leer solicitudes desde un archivo CSV y enviarlas al Controlador.                                */
-/*      - Leer la respuesta por el FIFO de respuesta y mostrarla por pantalla.                             */
+ *  int main(int argc, char *argv[])                                                                        *
+ *                                                                                                          *
+ *  Propósito:                                                                                              *
+ *      - Parsear parámetros de línea de comandos (-s, -a, -p).                                             *
+ *      - Crear FIFO de respuesta propio del agente.                                                        *
+ *      - Registrarse ante el Controlador y leer la hora actual de simulación.                              *
+ *      - Leer solicitudes desde un archivo CSV y enviarlas al Controlador.                                 *
+ *      - Leer la respuesta por el FIFO de respuesta y mostrarla por pantalla.                              *
 /************************************************************************************************************/
 int main(int argc, char *argv[])
 {
