@@ -27,7 +27,7 @@
 *   - El agente lee solicitudes del CSV y las envía si la hora >= hora_actual de simulación.                 *
 **************************************************************************************************************/
 
-/************************************************************************************************************/
+/************************************************************************************************************
  *  int main(int argc, char *argv[])                                                                        *
  *                                                                                                          *
  *  Propósito:                                                                                              *
@@ -36,7 +36,7 @@
  *      - Registrarse ante el Controlador y leer la hora actual de simulación.                              *
  *      - Leer solicitudes desde un archivo CSV y enviarlas al Controlador.                                 *
  *      - Leer la respuesta por el FIFO de respuesta y mostrarla por pantalla.                              *
-/************************************************************************************************************/
+************************************************************************************************************/
 int main(int argc, char *argv[])
 {
     char nombre[64]      = "";
