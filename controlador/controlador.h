@@ -89,5 +89,6 @@ void servidor_destruir(controlador_t *ctrl);
 
 void *servidor_hilo_reloj   (void *arg);
 void *servidor_hilo_agentes (void *arg);
+int servidor_procesar_solicitud(controlador_t *ctrl,const char *familia,int personas,int hora_ini,int hora_fin);
 
 #endif /* __CONTROLADOR_H__ */
