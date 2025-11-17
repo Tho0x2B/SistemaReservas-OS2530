@@ -157,21 +157,25 @@ void *servidor_hilo_agentes(void *arg)
     /* ---- Bucle principal de atencion de agentes ---- */
     while (ctrl->simulacion_activa) {
 
-        /* ---- Bloquea esperando datos desde el FIFO ---- */
+        /* ---- Bloquea esperando datos desde el FIFO nominal del servidor ---- */
         read_bytes = read(ctrl->fifo_fd, readbuf, sizeof(readbuf) - 1);
         if (read_bytes <= 0) {
-            /* Error o cierre del otro extremo; puedes decidir si sigues o sales */
+            /* Si read devuelve 0 => otro extremo cerrado; salir si simulacion terminó */
+            if (read_bytes == 0) {
+                /* El FIFO fue cerrado (probablemente en servidor_destruir) */
+                break;
+            }
             if (read_bytes < 0) {
                 perror("[AGENTES] read(FIFO)");
+                /* Pequeño sleep para evitar busy-loop en caso de error transitorio */
+                sleep(1);
             }
             continue;
         }
 
         /* ---- Termina la cadena y normaliza: quita salto de linea ---- */
         readbuf[read_bytes] = '\0';
-
         stringlen = (int) strlen(readbuf);
-
         if (stringlen > 0 && readbuf[stringlen - 1] == '\n') {
             readbuf[stringlen - 1] = '\0';
             stringlen--;
@@ -184,22 +188,97 @@ void *servidor_hilo_agentes(void *arg)
 
             printf("[AGENTES] Recibido desde FIFO: \"%s\" (len=%d)\n",
                    readbuf, stringlen);
+            fflush(stdout);
 
-            /* Mas adelante:
-             *   - parsear readbuf -> solicitud_reserva_t
-             *   - llamar servidor_procesar_solicitud(...)
-             *   - abrir pipe_respuesta y escribir respuesta_reserva_t
-             */
+            /* ---- Caso: registro de agente: "REGISTRO;Nombre;/ruta/pipe" ---- */
+            if (strncmp(readbuf, "REGISTRO;", 9) == 0) {
+                char nombre[64];
+                char pipe_agente_path[256];
+
+                /* parseo seguro */
+                if (sscanf(readbuf + 9, "%63[^;];%255s", nombre, pipe_agente_path) >= 1) {
+
+                    printf("[AGENTES] Registro de agente '%s', pipe respuesta: %s\n",
+                           nombre, pipe_agente_path);
+                    fflush(stdout);
+
+                    /* Crear FIFO de respuesta si no existe */
+                    if (mkfifo(pipe_agente_path, 0666) == -1) {
+                        if (errno != EEXIST) {
+                            perror("[AGENTES] mkfifo(pipe_agente)");
+                            /* no podemos atender este agente ahora */
+                            continue;
+                        }
+                    }
+
+                    /* Abrir el FIFO de respuesta en modo escritura.
+                       Puede ocurrir que el agente aún no haya hecho open( O_RDONLY ).
+                       Para evitar bloqueo indefinido, hacemos reintentos por unos
+                       segundos (timeout simple). */
+                    int fd_resp = -1;
+                    int tries = 0;
+                    const int max_tries = 20; /* 20 * 100ms = 2s de espera total */
+                    while (tries < max_tries) {
+                        fd_resp = open(pipe_agente_path, O_WRONLY | O_NONBLOCK);
+                        if (fd_resp != -1) break;
+                        if (errno == ENXIO || errno == EWOULDBLOCK) {
+                            /* nadie leyendo todavía, espera un poco */
+                            usleep(100000); /* 100 ms */
+                            tries++;
+                            continue;
+                        } else {
+                            perror("[AGENTES] open(pipe_agente) error");
+                            break;
+                        }
+                    }
+
+                    /* si no pudimos abrir en modo NONBLOCK, intentamos bloquear brevemente */
+                    if (fd_resp == -1) {
+                        /* último intento en modo bloqueante (puede bloquear si no hay lector) */
+                        fd_resp = open(pipe_agente_path, O_WRONLY);
+                        if (fd_resp == -1) {
+                            perror("[AGENTES] open(pipe_agente) ultimo intento fallo");
+                        }
+                    }
+
+                    if (fd_resp != -1) {
+                        /* escribir la hora actual al agente */
+                        char msg[128];
+                        int len = snprintf(msg, sizeof(msg), "HORA;%d\n", ctrl->hora_actual);
+                        if (len > 0) {
+                            ssize_t w = write(fd_resp, msg, (size_t)len);
+                            if (w == -1) {
+                                perror("[AGENTES] write(pipe_agente)");
+                            } else {
+                                printf("[AGENTES] Enviado a %s: %s", pipe_agente_path, msg);
+                                fflush(stdout);
+                            }
+                        }
+                        close(fd_resp);
+                    } else {
+                        printf("[AGENTES] No se pudo abrir pipe de respuesta para agente %s\n", nombre);
+                        fflush(stdout);
+                    }
+                } else {
+                    printf("[AGENTES] Formato de REGISTRO invalido: %s\n", readbuf);
+                    fflush(stdout);
+                }
+
+            } else {
+                /* ---- Aquí se procesarán otros tipos de mensajes (p. ej. SOLICITUD;...) ---- */
+                printf("[AGENTES] Mensaje no-REGISTRO recibido: %s\n", readbuf);
+                fflush(stdout);
+                /* parsear y procesar solicitudes más adelante */
+            }
         }
         /* ---- Si es "end": termina el hilo ---- */
         else {
             printf("[AGENTES] Recibido comando de fin \"%s\". Cerrando hilo de agentes.\n",
                    readbuf);
+            fflush(stdout);
 
             /* ---- Marca fin global de simulacion (opcional, segun diseño) ---- */
             ctrl->simulacion_activa = 0;
-
-            /* El cierre real del FIFO y unlink se hace en servidor_destruir()   */
             break;
         }
     }
