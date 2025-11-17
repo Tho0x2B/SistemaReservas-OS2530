@@ -77,7 +77,7 @@ typedef struct {
 
     char pipe_entrada[MAX_LONG_NOMBRE_PIPE];
     int  fifo_fd;
-
+    int reloj_iniciado;
 
     char simulacion_activa;
 } controlador_t;
