@@ -18,13 +18,13 @@ DIR_AGENTE = agente
 CONTROLADOR_SRC = $(DIR_CONTROLADOR)/main.c \
                    $(DIR_CONTROLADOR)/controlador.c
 
-CONTROLADOR_OUT = controlador
+CONTROLADOR_OUT = controlador_exec
 
 # Archivos del Agente
 AGENTE_SRC = $(DIR_AGENTE)/main.c \
               $(DIR_AGENTE)/agente.c
 
-AGENTE_OUT = agente
+AGENTE_OUT = agente_exec
 
 # ======================
 #  Targets principales
@@ -60,7 +60,5 @@ cleanall: clean
 help:
 	@echo "Comandos disponibles:"
 	@echo "  make            --> Compila Controlador y Agente"
-	@echo "  make controlador --> Compila solo el Controlador"
-	@echo "  make agente      --> Compila solo el Agente"
 	@echo "  make clean       --> Borra ejecutables"
 	@echo "  make cleanall    --> Borra ejecutables y pipes"
