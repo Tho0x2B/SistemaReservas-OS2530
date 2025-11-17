@@ -27,6 +27,26 @@
 /************************************************* Headers **************************************************/
 #include "agente.h"
 
+int preparar_fifo_respuesta(const char *pipe_resp) {
+    // Crear FIFO si no existe
+    if (mkfifo(pipe_resp, 0666) == -1) {
+        if (errno != EEXIST) {
+            perror("mkfifo pipe_resp");
+            return -1;
+        }
+    }
+
+    // Abrir el FIFO en modo lectura ANTES del registro
+    int fd = open(pipe_resp, O_RDONLY | O_NONBLOCK);
+    if (fd < 0) {
+        perror("open pipe_resp");
+        return -1;
+    }
+
+    return fd; // devolver descriptor para leer la respuesta
+}
+
+
 /************************************************************************************************************
  *                                                                                                          *
  *  int registrar_agente(const char *nombre, const char *pipe_srv, const char *pipe_resp);                  *
