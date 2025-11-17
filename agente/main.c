@@ -1,5 +1,7 @@
 #include "agente.h"
-
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <errno.h>
 /*************************************************************************************************************
 *            Pontificia Universidad Javeriana                                                                *
 *                                                                                                            *
@@ -37,6 +39,15 @@
  *      - Leer solicitudes desde un archivo CSV y enviarlas al Controlador.                                 *
  *      - Leer la respuesta por el FIFO de respuesta y mostrarla por pantalla.                              *
 ************************************************************************************************************/
+/* función auxiliar para quitar O_NONBLOCK */
+static int set_blocking(int fd) {
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1) return -1;
+    flags &= ~O_NONBLOCK;
+    return fcntl(fd, F_SETFL, flags);
+}
+
+
 int main(int argc, char *argv[])
 {
     char nombre[64]      = "";
@@ -87,10 +98,18 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+     /* ---- Ahora que hemos enviado el registro, convertimos fd_resp a bloqueante
+       para que read() espere la respuesta del servidor de forma natural. ---- */
+    if (set_blocking(fd_resp) == -1) {
+        perror("set_blocking(fd_resp)");
+        /* no fatal, pero recomendable */
+    }
+
     char buffer[MAXLINE];
     int  hora_actual = 0;
     ssize_t read_bytes;
 
+    
     read_bytes = read(fd_resp, buffer, sizeof(buffer) - 1);
     if (read_bytes > 0) {
         buffer[read_bytes] = '\0';   /* patrón cliente FIFO: usar read_bytes y terminar en '\0' */
@@ -132,7 +151,10 @@ int main(int argc, char *argv[])
         }
 
         /* ---- Enviar solicitud al Controlador ---- */
-        enviar_solicitud(familia, personas, hora, pipe_srv, pipe_resp);
+        if (enviar_solicitud(familia, personas, hora, pipe_srv, pipe_resp) < 0) {
+            fprintf(stderr, "Error al enviar solicitud para %s\n", familia);
+            continue;
+        }
 
         /* ---- Esperar respuesta en el FIFO de respuesta ---- */
         fd_resp = open(pipe_resp, O_RDONLY);
@@ -141,15 +163,22 @@ int main(int argc, char *argv[])
             break;
         }
 
-        read_bytes = read(fd_resp, buffer, sizeof(buffer) - 1);
+         read_bytes = read(fd_resp, buffer, sizeof(buffer) - 1);
         if (read_bytes > 0) {
-            buffer[read_bytes] = '\0';   /* sin memset, mismo patrón que el cliente de referencia */
-            printf("Agente %s recibió respuesta: %s\n", nombre, buffer);
-        } else if (read_bytes < 0) {
+            buffer[read_bytes] = '\0';
+            printf("Agente %s recibió respuesta: %s", nombre, buffer); /* buffer probablemente tiene \n */
+            /* Si el mensaje del servidor contiene nueva hora (p.ej. "HORA;N") podrías actualizar hora_actual */
+            char *p = strchr(buffer, ';');
+            if (p != NULL && strncmp(buffer, "HORA;", 5) == 0) {
+                hora_actual = atoi(p + 1);
+            }
+        } else if (read_bytes == 0) {
+            /* El servidor cerró el FIFO: terminar */
+            fprintf(stderr, "Agente %s: FIFO de respuesta cerrado por servidor. Saliendo.\n", nombre);
+            break;
+        } else {
             perror("read respuesta");
         }
-
-        close(fd_resp);
 
         /* ---- Pausa de 2 segundos entre solicitudes ---- */
         sleep(2);
@@ -159,6 +188,7 @@ int main(int argc, char *argv[])
     printf("Agente %s termina.\n", nombre);
 
     fclose(fp);
+    close(fd_resp);
     unlink(pipe_resp);
 
     return 0;
