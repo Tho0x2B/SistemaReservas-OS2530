@@ -270,12 +270,64 @@ void *servidor_hilo_agentes(void *arg)
                     fflush(stdout);
                 }
 
-            } else {
-                /* ---- Aquí se procesarán otros tipos de mensajes (p. ej. SOLICITUD;...) ---- */
-                printf("[AGENTES] Mensaje no-REGISTRO recibido: %s\n", readbuf);
+            } else if (strncmp(readbuf, "SOLICITUD;", 10) == 0) {
+
+                      char familia[64];
+                      int personas, hora_ini, hora_fin;
+                      char pipe_agente[256];
+
+                    /* Formato esperado:
+                       SOLICITUD;Familia;personas;hora_ini;hora_fin;/tmp/resp_A1
+                        */
+                    int r = sscanf(readbuf + 10, "%63[^;];%d;%d;%d;%255s",familia, &personas, &hora_ini, &hora_fin, pipe_agente);
+                
+                if (r != 5) {
+                printf("[AGENTES] Formato SOLICITUD invalido: %s\n", readbuf);
                 fflush(stdout);
-                /* parsear y procesar solicitudes más adelante */
+                continue;
+                   }
+        
+                printf("[AGENTES] Solicitud recibida: familia=%s, personas=%d, h_ini=%d, h_fin=%d, pipe=%s\n", familia, personas, hora_ini, hora_fin, pipe_agente);
+                fflush(stdout);
+
+
+                int resultado = servidor_procesar_solicitud(ctrl, familia, personas, hora_ini, hora_fin);
+
+    /* ===============================================================
+       ABRIR FIFO DEL AGENTE PARA MANDAR RESPUESTA
+       =============================================================== */
+                int fd_resp = open(pipe_agente, O_WRONLY | O_NONBLOCK);
+                if (fd_resp == -1) {
+                    perror("[AGENTES] open(pipe_agente respuesta)");
+                    continue;
+                }
+
+                char msg[256];
+
+                if (resultado == 0) {
+                /* ACEPTADA */
+                    snprintf(msg, sizeof(msg), "RESP;OK;%d\n", hora_ini);
             }
+                else if (resultado == 1) {
+        /* REPROGRAMADA */
+                    snprintf(msg, sizeof(msg), "RESP;REPROG;%d\n", hora_ini + 1);
+            }
+            else {
+        /* DENEGADA */
+                snprintf(msg, sizeof(msg), "RESP;DENEGADA;%d\n", hora_ini);
+                }
+
+                write(fd_resp, msg, strlen(msg));
+                close(fd_resp);
+
+                printf("[AGENTES] Respuesta enviada al agente: %s", msg);
+                   fflush(stdout);
+            }
+            else {
+            printf("[AGENTES] Mensaje desconocido: %s\n", readbuf);
+            fflush(stdout);
+            }
+
         }
         /* ---- Si es "end": termina el hilo ---- */
         else {
@@ -290,4 +342,43 @@ void *servidor_hilo_agentes(void *arg)
     }
 
     return NULL;
+}
+
+
+int servidor_procesar_solicitud(controlador_t *ctrl, const char *familia, int personas,int hora_ini, int hora_fin)
+{
+    /* Validar rango */
+    if (hora_ini < ctrl->hora_ini || hora_fin > ctrl->hora_fin)
+        return -1;
+
+    /* Verificar aforo */
+    if (ctrl->horas[hora_ini].ocupacion_actual + personas <= ctrl->aforo_maximo) {
+
+        int idx = ctrl->horas[hora_ini].num_reservas;
+        if (idx >= MAX_RESERVAS_POR_HORA)
+            return -1;
+
+        strcpy(ctrl->horas[hora_ini].reservas[idx].nombre_familia, familia);
+        ctrl->horas[hora_ini].reservas[idx].hora_inicio  = hora_ini;
+        ctrl->horas[hora_ini].reservas[idx].hora_fin     = hora_fin;
+        ctrl->horas[hora_ini].reservas[idx].num_personas = personas;
+
+        ctrl->horas[hora_ini].num_reservas++;
+        ctrl->horas[hora_ini].ocupacion_actual += personas;
+
+        ctrl->solicitudes_ok++;
+
+        return 0;   /* RESERVA ACEPTADA */
+    }
+
+    /* Intentar reprogramación */
+    if (hora_ini + 1 <= ctrl->hora_fin &&
+        ctrl->horas[hora_ini + 1].ocupacion_actual + personas <= ctrl->aforo_maximo)
+    {
+        ctrl->solicitudes_reprogramadas++;
+        return 1;   /* REPROGRAMADA */
+    }
+
+    ctrl->solicitudes_negadas++;
+    return -1;      /* DENEGADA */
 }
