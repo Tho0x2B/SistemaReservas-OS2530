@@ -284,6 +284,8 @@
                                     fflush(stdout);
                                 }
                             }
+                            /* Esperar que el agente lea inmediatamente para que no vea EOF prematuro */
+                            usleep(200000); // 200ms
                             close(fd_resp);
                         } else {
                             printf("[AGENTES] No se pudo abrir pipe de respuesta para agente %s\n", nombre);
