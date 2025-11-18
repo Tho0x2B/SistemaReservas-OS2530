@@ -15,9 +15,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/stat.h>    /* mkfifo */
-#include <fcntl.h>       /* open   */
-#include <unistd.h>      /* close, sleep */
+#include <sys/stat.h>    
+#include <fcntl.h>       
+#include <unistd.h>     
 
 #include "controlador.h"
 
@@ -124,9 +124,9 @@ void servidor_destruir(controlador_t *ctrl)
         unlink(ctrl->pipe_entrada);
     }
 
-    /* ================================================================
-     * GENERACION DEL REPORTE FINAL (reporte_final.txt)
-     * ================================================================ */
+    
+     /* GENERACION DEL REPORTE FINAL (reporte_final.txt)*/
+     
     FILE *fp = fopen("reporte_final.txt", "w");
     if (fp == NULL) {
         perror("Error creando reporte_final.txt");
@@ -194,9 +194,6 @@ void *servidor_hilo_reloj(void *ctrl)
                c->hora_actual, 
                c->horas[c->hora_actual].ocupacion_actual,
                c->aforo_maximo);
-        
-        /* Nota: Aqui podrias limpiar la ocupacion de horas pasadas si quisieras,
-           pero para el reporte final es mejor dejar el registro. */
 
         pthread_mutex_unlock(&c->mutex);
     }
