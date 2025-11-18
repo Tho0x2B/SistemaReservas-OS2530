@@ -3,9 +3,8 @@
  *                     Departamento de Ingenieria de Sistemas – Sistemas Operativos                  *
  *                                                                                                   *
  * ------------------------------------------------------------------------------------------------- *
- * Archivo     : agente.h                                                                            *
- * Autor       : Thomas Leal Puerta                                                                  *
- * Fecha       : 27/10/2025                                                                          *
+ * Autor       : Thomas Leal, Carolina Ujueta, Diego Melgarejo, Juan Motta                           *
+ * Fecha       : 14/11/2025                                                                          *
  *                                                                                                   *
  * Descripcion : Archivo de cabecera para el modulo del Agente de Reserva.                           *
  *               Contiene la definicion de constantes, prototipos de funciones y los includes        *
