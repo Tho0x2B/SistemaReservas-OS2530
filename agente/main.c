@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 
         read_bytes = read(fd_resp, buffer, sizeof(buffer) - 1);
         if (read_bytes > 0) {
-            buffer[read_bytes] = '\0';   /* sin memset, mismo patrón que el cliente de referencia */
+            buffer[read_bytes] = '\0';
             printf("Agente %s recibió respuesta: %s\n", nombre, buffer);
         } else if (read_bytes < 0) {
             perror("read respuesta");
