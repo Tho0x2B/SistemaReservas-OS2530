@@ -3,8 +3,8 @@
  *                     Departamento de Ingenieria de Sistemas – Sistemas Operativos                  *
  *                                                                                                   *
  * ------------------------------------------------------------------------------------------------- *
- * Autor       : Thomas Leal                                                                         *
- * Fecha       : 27/10/2025                                                                          *
+ * Autor       : Thomas Leal, Carolina Ujueta, Diego Melgarejo, Juan Motta                           *
+ * Fecha       : 14/11/2025                                                                          *
  *                                                                                                   *
  * Archivo     : agente.c                                                                            *
  *                                                                                                   *
