@@ -1,12 +1,13 @@
+
 /************************************************************************************************************
- *                               Pontificia Universidad Javeriana                                           *
- *                                   Facultad de Ingenieria                                                 *
- *                               Departamento de Ingenieria de Sistemas                                     *
+ *                                   PONTIFICIA UNIVERSIDAD JAVERIANA                                       *
+ *                     Departamento de Ingenieria de Sistemas – Sistemas Operativos                         *
  *                                                                                                          *
- *  Autor:      Thomas Leal Puerta                                                                          *
- *  Fecha:      16 de noviembre de 2025                                                                     *
+ * -------------------------------------------------------------------------------------------------------- *
+ * Autor       : Thomas Leal, Carolina Ujueta, Diego Melgarejo, Juan Motta                                  *
+ * Fecha       : 14/11/2025                                                                                 *
  *  Materia:    Sistemas Operativos                                                                         *
- *  Profesor:   John Jairo Corredor, PhD                                                                    *
+ *  Profesor:   John Jairo Corredor                                                                         *
  *  Fichero:    main.c                                                                                      *
  *                                                                                                          *
  *  Objetivo:   Punto de entrada del servidor "Controlador de Reserva".  Este programa se encarga de        *
