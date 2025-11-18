@@ -1,31 +1,34 @@
-#include "agente.h"
 
 /*************************************************************************************************************
-*            Pontificia Universidad Javeriana                                                                *
-*                                                                                                            *
-* Autor:     Thomas Leal Puerta                                                                              *
-* Fecha:     16 de noviembre de 2025                                                                         *
-* Materia:   Sistemas Operativos                                                                             *
-* Profesor:  John Corredor Franco                                                                            *
-* Objetivo:  Proceso CLIENTE/AGENTE que se comunica mediante FIFO con el                                     *
-*            Controlador de Reserva del parque, enviando solicitudes leídas desde un archivo CSV.            *
-*                                                                                                            *
-**************************************************************************************************************
-*                                                                                                            *
-* HOW TO USE                                                                                                 *
-*                                                                                                            *
-* HOW TO COMPILE TO PRODUCE EXECUTABLE PROGRAM:                                                              *
-*   Linux/macOS:          gcc agente.c agente_main.c -o agente                                               *
-*                                                                                                            *
-* HOW TO RUN THE PROGRAM:                                                                                    *
-*   Linux/macOS:          ./agente -s nombreAgente -a archivo.csv -p /tmp/fifo_controlador                   *
-*                                                                                                            *
-* NOTAS DE USO:                                                                                              *
-*   - El proceso CONTROLADOR debe estar ejecutándose y haber creado el FIFO de entrada indicado en -p.       *
-*   - Cada agente crea su propio FIFO de respuesta en /tmp/resp_<nombreAgente>.                              *
-*   - El controlador envía al registrarse la hora actual de simulación.                                      *
-*   - El agente lee solicitudes del CSV y las envía si la hora >= hora_actual de simulación.                 *
-**************************************************************************************************************/
+ *                                   PONTIFICIA UNIVERSIDAD JAVERIANA                                        *
+ *                     Departamento de Ingenieria de Sistemas – Sistemas Operativos                          *
+ *                                                                                                           *
+ * --------------------------------------------------------------------------------------------------------- *
+ * Autor       : Thomas Leal, Carolina Ujueta, Diego Melgarejo, Juan Motta                                   *
+ * Fecha       : 14/11/2025                                                                                  *
+ * Materia:   Sistemas Operativos                                                                            *
+ * Profesor:  John Corredor Franco                                                                           *
+ * Objetivo:  Proceso CLIENTE/AGENTE que se comunica mediante FIFO con el                                    *
+ *            Controlador de Reserva del parque, enviando solicitudes leídas desde un archivo CSV.           * 
+ *                                                                                                           *
+ *************************************************************************************************************
+ *                                                                                                           *
+ * HOW TO USE                                                                                                *
+ *                                                                                                           *
+ * HOW TO COMPILE TO PRODUCE EXECUTABLE PROGRAM:                                                             *
+ *   Linux/macOS:          gcc agente.c agente_main.c -o agente                                              *
+ *                                                                                                           *
+ * HOW TO RUN THE PROGRAM:                                                                                   *
+ *   Linux/macOS:          ./agente -s nombreAgente -a archivo.csv -p /tmp/fifo_controlador                  *
+ *                                                                                                           *
+ * NOTAS DE USO:                                                                                             *
+ *   - El proceso CONTROLADOR debe estar ejecutándose y haber creado el FIFO de entrada indicado en -p.      *
+ *   - Cada agente crea su propio FIFO de respuesta en /tmp/resp_<nombreAgente>.                             *
+ *   - El controlador envía al registrarse la hora actual de simulación.                                     *
+ *   - El agente lee solicitudes del CSV y las envía si la hora >= hora_actual de simulación.                *
+ *************************************************************************************************************/
+
+#include "agente.h"
 
 /************************************************************************************************************
  *  int main(int argc, char *argv[])                                                                        *
