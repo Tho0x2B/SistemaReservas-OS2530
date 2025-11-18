@@ -230,7 +230,9 @@ void *servidor_hilo_agentes(void *arg)
     while (ctrl->simulacion_activa) {
 
         /* Limpiar buffer */
+        /* function is used to set a block of memory to a specific value. It is commonly used for initializing memory to zero or any other value efficiently. */
         memset(readbuf, 0, sizeof(readbuf));
+        
 
         /* ---- Bloquea esperando datos desde el FIFO ---- */
         read_bytes = read(ctrl->fifo_fd, readbuf, sizeof(readbuf) - 1);
@@ -297,7 +299,7 @@ void *servidor_hilo_agentes(void *arg)
                     
                     char texto_respuesta[128];
                     
-                    /* --- LOGICA CRITICA --- */
+                    /* --- RUTA CRITICA --- */
                     pthread_mutex_lock(&ctrl->mutex);
 
                     /* 0. Número de personas mayor al aforo permitido -> negada directa */
@@ -413,7 +415,7 @@ void *servidor_hilo_agentes(void *arg)
                     }
 
                     pthread_mutex_unlock(&ctrl->mutex);
-                    /* --- FIN LOGICA CRITICA --- */
+                    /* --- FIN RUTA CRITICA --- */
 
                     /* ---- Responder al agente ---- */
                     fd_resp = open(pipe_resp, O_WRONLY);
