@@ -1,14 +1,16 @@
-/************************************************************************************************************
- * Pontificia Universidad Javeriana                                           *
- * Facultad de Ingenieria                                                 *
- * Departamento de Ingenieria de Sistemas                                     *
- * *
- * Autor:      Thomas Leal Puerta                                                                          *
- * Fecha:      16 de noviembre de 2025                                                                     *
- * Materia:    Sistemas Operativos                                                                         *
- * Profesor:   John Jairo Corredor, PhD                                                                    *
- * Fichero:    controlador.c                                                                               *
- ************************************************************************************************************/
+
+/*************************************************************************************************************
+ *                                   PONTIFICIA UNIVERSIDAD JAVERIANA                                        *
+ *                     Departamento de Ingenieria de Sistemas – Sistemas Operativos                          *
+ *                                                                                                           *
+ * --------------------------------------------------------------------------------------------------------- *
+ * Autor       : Thomas Leal, Carolina Ujueta, Diego Melgarejo, Juan Motta                                   *
+ * Fecha       : 14/11/2025                                                                                  *
+ * Materia:   Sistemas Operativos                                                                            *
+ * Materia:    Sistemas Operativos                                                                           *
+ * Profesor:   John Jairo Corredor, PhD                                                                      *
+ * Fichero:    controlador.c                                                                                 *
+ *************************************************************************************************************/
 
 /***************************************** Headers **********************************************************/
 #include <stdio.h>
