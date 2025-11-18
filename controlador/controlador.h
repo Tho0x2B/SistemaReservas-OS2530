@@ -1,3 +1,18 @@
+/*****************************************************************************************************
+ *                                   PONTIFICIA UNIVERSIDAD JAVERIANA                                *
+ *                     Departamento de Ingenieria de Sistemas – Sistemas Operativos                  *
+ *                                                                                                   *
+ * ------------------------------------------------------------------------------------------------- *
+ * Autor       : Thomas Leal, Carolina Ujueta, Diego Melgarejo, Juan Motta                           *
+ * Fecha       : 14/11/2025                                                                          *
+ *                                                                                                   *
+ * Descripcion : Archivo de cabecera para el modulo del Controlador de Reserva.                      *
+ *               Contiene la definicion de constantes, prototipos de funciones y los includes        *
+ *               necesarios para la comunicacion entre agentes y el Controlador del Sistema de       *
+ *               Reservas utilizando FIFOs (named pipes).                                            *
+ *                                                                                                   *
+ *****************************************************************************************************/
+
 /************************************************************************************************************/
 #ifndef __CONTROLADOR_H__
 #define __CONTROLADOR_H__
