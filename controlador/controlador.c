@@ -1,22 +1,23 @@
-
-/*************************************************************************************************************
- *                                   PONTIFICIA UNIVERSIDAD JAVERIANA                                        *
- *                     Departamento de Ingenieria de Sistemas – Sistemas Operativos                          *
- *                                                                                                           *
- * --------------------------------------------------------------------------------------------------------- *
- * Autor       : Thomas Leal, Carolina Ujueta, Diego Melgarejo, Juan Motta                                   *
- * Fecha       : 14/11/2025                                                                                  *
- * Fichero:    controlador.c                                                                                 *
- *************************************************************************************************************/
+/************************************************************************************************************
+ * Pontificia Universidad Javeriana                                           *
+ * Facultad de Ingenieria                                                 *
+ * Departamento de Ingenieria de Sistemas                                     *
+ * *
+ * Autor:      Thomas Leal Puerta                                                                          *
+ * Fecha:      16 de noviembre de 2025                                                                     *
+ * Materia:    Sistemas Operativos                                                                         *
+ * Profesor:   John Jairo Corredor, PhD                                                                    *
+ * Fichero:    controlador.c                                                                               *
+ ************************************************************************************************************/
 
 /***************************************** Headers **********************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/stat.h>    
-#include <fcntl.h>       
-#include <unistd.h>     
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "controlador.h"
 
@@ -238,7 +239,7 @@ void *servidor_hilo_agentes(void *arg)
             // Si es error real o EOF inesperado
             if (read_bytes < 0 && errno != EINTR) {
                 // Si el simulador sigue activo, es un error. Si no, es cierre normal.
-                 if(ctrl->simulacion_activa) perror("[AGENTES] read(FIFO)");
+                if (ctrl->simulacion_activa) perror("[AGENTES] read(FIFO)");
             }
             continue;
         }
@@ -286,7 +287,7 @@ void *servidor_hilo_agentes(void *arg)
                 p1 = strtok(NULL, ";"); // Familia
                 p2 = strtok(NULL, ";"); // Personas
                 p3 = strtok(NULL, ";"); // Hora Inicio
-                p4 = strtok(NULL, ";"); // Hora Fin
+                p4 = strtok(NULL, ";"); // Hora Fin (no se usa, reserva fija de 2h)
                 p5 = strtok(NULL, ";"); // Pipe Respuesta
 
                 if (p1 && p2 && p3 && p5) {
@@ -299,48 +300,122 @@ void *servidor_hilo_agentes(void *arg)
                     /* --- LOGICA CRITICA --- */
                     pthread_mutex_lock(&ctrl->mutex);
 
-                    // 1. Validar si la hora ya pasó
-                    if (h_ini < ctrl->hora_actual) {
-                        ctrl->solicitudes_negadas++; // [cite: 128]
-                        sprintf(texto_respuesta, "NEGADA: Hora %d ya paso", h_ini);
-                        printf("[CTRL] Rechazada %s (Extemporanea)\n", p1);
+                    /* 0. Número de personas mayor al aforo permitido -> negada directa */
+                    if (num_pers > ctrl->aforo_maximo) {
+                        ctrl->solicitudes_negadas++;
+                        sprintf(texto_respuesta,
+                                "NEGADA: Excede aforo maximo (%d)", ctrl->aforo_maximo);
+                        printf("[CTRL] Rechazada %s (Excede aforo: %d > %d)\n",
+                               p1, num_pers, ctrl->aforo_maximo);
                     }
-                    // 2. Validar si la hora está fuera de rango
+                    /* 1. Hora ya pasó (extemporánea): intentar reprogramar más adelante */
+                    else if (h_ini < ctrl->hora_actual) {
+                        int h_busca;
+                        int asignada = 0;
+
+                        for (h_busca = ctrl->hora_actual; h_busca < ctrl->hora_fin; h_busca++) {
+                            int cabe_h1 = (ctrl->horas[h_busca].ocupacion_actual + num_pers)
+                                          <= ctrl->aforo_maximo;
+                            int cabe_h2 = 1;
+                            if (h_busca + 1 < ctrl->hora_fin) {
+                                cabe_h2 = (ctrl->horas[h_busca + 1].ocupacion_actual + num_pers)
+                                          <= ctrl->aforo_maximo;
+                            }
+
+                            if (cabe_h1 && cabe_h2) {
+                                ctrl->horas[h_busca].ocupacion_actual += num_pers;
+                                if (h_busca + 1 < ctrl->hora_fin) {
+                                    ctrl->horas[h_busca + 1].ocupacion_actual += num_pers;
+                                }
+                                ctrl->solicitudes_reprogramadas++;
+                                sprintf(texto_respuesta,
+                                        "REPROGRAMADA: %d:00 (solicitada %d:00)",
+                                        h_busca, h_ini);
+                                printf("[CTRL] Reprogramada %s (%d p) de %d:00 a %d:00\n",
+                                       p1, num_pers, h_ini, h_busca);
+                                asignada = 1;
+                                break;
+                            }
+                        }
+
+                        if (!asignada) {
+                            ctrl->solicitudes_negadas++;
+                            sprintf(texto_respuesta,
+                                    "NEGADA: Hora %d ya paso y sin cupo posterior", h_ini);
+                            printf("[CTRL] Rechazada %s (Extemporanea sin cupo)\n", p1);
+                        }
+                    }
+                    /* 2. Hora solicitada mayor que horaFin -> negada, debe volver otro día */
                     else if (h_ini > ctrl->hora_fin) {
-                         ctrl->solicitudes_negadas++; // [cite: 128]
-                         sprintf(texto_respuesta, "NEGADA: Hora %d cierre", h_ini);
-                         printf("[CTRL] Rechazada %s (Cierre)\n", p1);
+                        ctrl->solicitudes_negadas++;
+                        sprintf(texto_respuesta,
+                                "NEGADA: Hora %d fuera del rango de atencion", h_ini);
+                        printf("[CTRL] Rechazada %s (Fuera de rango)\n", p1);
                     }
-                    // 3. Validar aforo
+                    /* 3. Hora vigente dentro de rango */
                     else {
-                        // Revisamos la hora solicitada y la siguiente (reserva de 2h)
-                        int cabe_h1 = (ctrl->horas[h_ini].ocupacion_actual + num_pers) <= ctrl->aforo_maximo;
+                        /* Revisamos la hora solicitada y la siguiente (reserva de 2h) */
+                        int cabe_h1 = (ctrl->horas[h_ini].ocupacion_actual + num_pers)
+                                      <= ctrl->aforo_maximo;
                         int cabe_h2 = 1; 
                         if (h_ini + 1 < ctrl->hora_fin) {
-                            cabe_h2 = (ctrl->horas[h_ini+1].ocupacion_actual + num_pers) <= ctrl->aforo_maximo;
+                            cabe_h2 = (ctrl->horas[h_ini + 1].ocupacion_actual + num_pers)
+                                      <= ctrl->aforo_maximo;
                         }
 
                         if (cabe_h1 && cabe_h2) {
-                            // ACEPTAR
+                            /* ACEPTAR en la hora solicitada */
                             ctrl->horas[h_ini].ocupacion_actual += num_pers;
                             if (h_ini + 1 < ctrl->hora_fin) {
                                 ctrl->horas[h_ini + 1].ocupacion_actual += num_pers;
                             }
-                            ctrl->solicitudes_ok++; // [cite: 129]
+                            ctrl->solicitudes_ok++;
                             sprintf(texto_respuesta, "RESERVA OK: %d:00", h_ini);
-                            printf("[CTRL] Aceptada %s (%d p) %d:00\n", p1, num_pers, h_ini);
+                            printf("[CTRL] Aceptada %s (%d p) %d:00\n",
+                                   p1, num_pers, h_ini);
                         } else {
-                            // SIN CUPO
-                            ctrl->solicitudes_negadas++; // [cite: 128]
-                            sprintf(texto_respuesta, "NEGADA: Sin cupo");
-                            printf("[CTRL] Rechazada %s (Aforo)\n", p1);
+                            /* No cabe en la hora pedida: intentar reprogramar a horas posteriores */
+                            int h_busca;
+                            int asignada = 0;
+
+                            for (h_busca = h_ini + 1; h_busca < ctrl->hora_fin; h_busca++) {
+                                int cabe_r1 = (ctrl->horas[h_busca].ocupacion_actual + num_pers)
+                                              <= ctrl->aforo_maximo;
+                                int cabe_r2 = 1;
+                                if (h_busca + 1 < ctrl->hora_fin) {
+                                    cabe_r2 = (ctrl->horas[h_busca + 1].ocupacion_actual + num_pers)
+                                              <= ctrl->aforo_maximo;
+                                }
+
+                                if (cabe_r1 && cabe_r2) {
+                                    ctrl->horas[h_busca].ocupacion_actual += num_pers;
+                                    if (h_busca + 1 < ctrl->hora_fin) {
+                                        ctrl->horas[h_busca + 1].ocupacion_actual += num_pers;
+                                    }
+                                    ctrl->solicitudes_reprogramadas++;
+                                    sprintf(texto_respuesta,
+                                            "REPROGRAMADA: %d:00 (solicitada %d:00)",
+                                            h_busca, h_ini);
+                                    printf("[CTRL] Reprogramada %s (%d p) de %d:00 a %d:00\n",
+                                           p1, num_pers, h_ini, h_busca);
+                                    asignada = 1;
+                                    break;
+                                }
+                            }
+
+                            if (!asignada) {
+                                ctrl->solicitudes_negadas++;
+                                sprintf(texto_respuesta,
+                                        "NEGADA: Sin cupo en ningun bloque de 2 horas");
+                                printf("[CTRL] Rechazada %s (Sin cupo en el dia)\n", p1);
+                            }
                         }
                     }
 
                     pthread_mutex_unlock(&ctrl->mutex);
                     /* --- FIN LOGICA CRITICA --- */
 
-                    // Responder
+                    /* ---- Responder al agente ---- */
                     fd_resp = open(pipe_resp, O_WRONLY);
                     if (fd_resp != -1) {
                         write(fd_resp, texto_respuesta, strlen(texto_respuesta));
