@@ -6,9 +6,8 @@
  * --------------------------------------------------------------------------------------------------------- *
  * Autor       : Thomas Leal, Carolina Ujueta, Diego Melgarejo, Juan Motta                                   *
  * Fecha       : 14/11/2025                                                                                  *
- * Materia:   Sistemas Operativos                                                                            *
  * Materia:    Sistemas Operativos                                                                           *
- * Profesor:   John Jairo Corredor, PhD                                                                      *
+ * Profesor:   John Jairo Corredor                                                                      *
  * Fichero:    controlador.c                                                                                 *
  *************************************************************************************************************/
 
